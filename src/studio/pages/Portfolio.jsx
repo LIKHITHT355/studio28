@@ -1,14 +1,22 @@
 import { useMemo, useState } from "react";
 import GalleryGrid from "../components/GalleryGrid";
 import CallNowButton from "../components/CallNowButton";
-import { CATEGORIES, GALLERY } from "../config";
+import { CATEGORIES } from "../config";
+import { useQuery } from "@tanstack/react-query";
+import { getImages } from "../../lib/actions";
 
 export default function Portfolio() {
   const [active, setActive] = useState("All");
-  const items = useMemo(
-    () => (active === "All" ? GALLERY : GALLERY.filter((g) => g.cat === active)),
-    [active]
-  );
+
+  const { data: dbImages, isLoading } = useQuery({
+    queryKey: ["images"],
+    queryFn: () => getImages(),
+  });
+
+  const items = useMemo(() => {
+    const allItems = dbImages || [];
+    return active === "All" ? allItems : allItems.filter((g) => g.cat === active);
+  }, [active, dbImages]);
 
   return (
     <>
@@ -16,7 +24,10 @@ export default function Portfolio() {
         <div className="s28-container">
           <span className="s28-eyebrow">Portfolio</span>
           <h1>A gallery of moments</h1>
-          <p>Browse selected work across weddings, portraits, events, and brands. Click any image to view full-screen.</p>
+          <p>
+            Browse selected work across weddings, portraits, events, and brands. Click any image to
+            view full-screen.
+          </p>
         </div>
       </section>
 
@@ -35,7 +46,11 @@ export default function Portfolio() {
               </button>
             ))}
           </div>
-          <GalleryGrid items={items} masonry />
+          {isLoading ? (
+            <div style={{ textAlign: "center", padding: "40px" }}>Loading gallery...</div>
+          ) : (
+            <GalleryGrid items={items} masonry />
+          )}
         </div>
       </section>
 

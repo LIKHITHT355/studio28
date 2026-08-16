@@ -9,30 +9,13 @@ export const STUDIO = {
   whatsappHref: "918884545006",
   instagram: "https://www.instagram.com/studio28blr?igsh=NG1tNnB6cnMxdHpq",
   facebook: "https://www.facebook.com/profile.php?id=100082434444044",
-  mapsEmbed:
-    "https://www.google.com/maps?q=Bangalore,Karnataka&output=embed",
+  mapsEmbed: "https://www.google.com/maps?q=Bangalore,Karnataka&output=embed",
 };
 
 const u = (id, w = 900) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=70`;
 
-export const GALLERY = [
-  { id: 1, cat: "Wedding", src: u("1519741497674-611481863552", 1200), alt: "Wedding ceremony" },
-  { id: 2, cat: "Wedding", src: u("1511285560929-80b456fea0bc", 1200), alt: "Bride and groom" },
-  { id: 3, cat: "Wedding", src: u("1520854221256-17451cc331bf", 1200), alt: "Wedding rings" },
-  { id: 4, cat: "Pre-Wedding", src: u("1529634597503-139d3726fed5", 1200), alt: "Pre-wedding couple" },
-  { id: 5, cat: "Pre-Wedding", src: u("1516589091380-5d8e87df6999", 1200), alt: "Couple portrait outdoors" },
-  { id: 6, cat: "Pre-Wedding", src: u("1522673607200-164d1b6ce486", 1200), alt: "Engagement shoot" },
-  { id: 7, cat: "Portrait", src: u("1494790108377-be9c29b29330", 1000), alt: "Studio portrait" },
-  { id: 8, cat: "Portrait", src: u("1500648767791-00dcc994a43e", 1000), alt: "Male portrait" },
-  { id: 9, cat: "Portrait", src: u("1524504388940-b1c1722653e1", 1000), alt: "Fashion portrait" },
-  { id: 10, cat: "Events", src: u("1492684223066-81342ee5ff30", 1200), alt: "Event crowd" },
-  { id: 11, cat: "Events", src: u("1505236858219-8359eb29e329", 1200), alt: "Corporate event" },
-  { id: 12, cat: "Events", src: u("1511578314322-379afb476865", 1200), alt: "Concert event" },
-  
-];
-
-export const CATEGORIES = ["All", "Wedding", "Pre-Wedding", "Portrait", "Events"];
+export const CATEGORIES = ["All", "Wedding", "Pre-Wedding", "Portrait", "Events", "Other"];
 
 export const SERVICES = [
   {

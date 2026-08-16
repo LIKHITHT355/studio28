@@ -9,7 +9,10 @@ export default function Services() {
         <div className="s28-container">
           <span className="s28-eyebrow">Services</span>
           <h1>Photography, tailored to you</h1>
-          <p>Every shoot is planned around your story. Call us to design a package that fits your event, timeline, and vision.</p>
+          <p>
+            Every shoot is planned around your story. Call us to design a package that fits your
+            event, timeline, and vision.
+          </p>
           <div style={{ marginTop: 24 }}>
             <CallNowButton variant="gold" />
           </div>

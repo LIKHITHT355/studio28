@@ -65,14 +65,6 @@
   --radius: 0.625rem;
   --background: oklch(0.99 0.005 80);
   --foreground: oklch(0.18 0.01 60);
-  /* Studios 28 brand */
-  --s28-bg: #faf8f4;
-  --s28-ink: #171412;
-  --s28-muted: #6b625a;
-  --s28-line: #e6e0d6;
-  --s28-gold: #b8975a;
-  --s28-gold-dark: #8a6d3b;
-  --s28-cream: #f1ebe0;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
@@ -148,5 +140,29 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.62);
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 18px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .glass-dark {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 18px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
 }

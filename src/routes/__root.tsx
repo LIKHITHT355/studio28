@@ -77,24 +77,76 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Studios 28 — Bangalore Photography Studio" },
+      {
+        name: "description",
+        content:
+          "Studios 28 is a Bangalore-based photography studio for weddings, portraits, events, and brand imagery.",
+      },
+      { name: "author", content: "Studios 28" },
+      { property: "og:title", content: "Studios 28 — Bangalore Photography Studio" },
+      {
+        property: "og:description",
+        content: "Weddings, portraits, and brand stories, captured in Bangalore by Studios 28.",
+      },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Studios 28" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      {
+        name: "twitter:title",
+        content: "Studios 28 — Bangalore Photography Studio",
+      },
+      {
+        name: "twitter:description",
+        content: "Weddings, portraits, and brand stories, captured in Bangalore by Studios 28.",
+      },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.ico?v=2", sizes: "any" },
+      { rel: "icon", href: "/favicon.jpg?v=2", type: "image/jpeg" },
+      { rel: "shortcut icon", href: "/favicon.ico?v=2" },
+      { rel: "apple-touch-icon", href: "/favicon.jpg?v=2" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" },
+      {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap",
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "@id": "#studios28",
+          name: "Studios 28",
+          description:
+            "A Bangalore-based photography studio capturing weddings, portraits, and brand stories with a timeless, editorial eye.",
+          telephone: "+91 88845 45006",
+          email: "pradeep7791@gmail.com",
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "Bangalore",
+            addressRegion: "Karnataka",
+            addressCountry: "IN",
+          },
+          sameAs: [
+            "https://www.instagram.com/studio28blr",
+            "https://www.facebook.com/profile.php?id=100082434444044",
+          ],
+          priceRange: "$$",
+          openingHours: "Mo-Sa 10:00-19:00",
+        }),
+      },
     ],
   }),
   shellComponent: RootShell,

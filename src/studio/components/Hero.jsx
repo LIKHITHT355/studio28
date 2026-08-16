@@ -18,15 +18,30 @@ export default function Hero() {
   return (
     <section className="s28-hero" aria-label="Studios 28 hero">
       {SLIDES.map((src, i) => (
-        <div key={src} className={`s28-hero-slide ${i === idx ? "active" : ""}`} style={{ backgroundImage: `url(${src})` }} />
+        <img
+          key={src}
+          className={`s28-hero-slide ${i === idx ? "active" : ""}`}
+          src={src}
+          alt={`Studios 28 photography showcase ${i + 1}`}
+          width={1900}
+          height={1267}
+          loading={i === 0 ? "eager" : "lazy"}
+          fetchPriority={i === 0 ? "high" : "auto"}
+          decoding={i === 0 ? "sync" : "async"}
+        />
       ))}
       <div className="s28-container s28-hero-inner">
         <div>
           <span className="s28-eyebrow">Bangalore Photography Studio</span>
           <h1>{STUDIO.tagline}</h1>
-          <p>Weddings, portraits, and brand imagery — shot with a timeless, editorial eye and delivered as heirloom-quality galleries.</p>
+          <p>
+            Weddings, portraits, and brand imagery — shot with a timeless, editorial eye and
+            delivered as heirloom-quality galleries.
+          </p>
           <div className="s28-hero-ctas">
-            <Link to="/portfolio" className="s28-btn s28-btn-ghost">View Portfolio</Link>
+            <Link to="/portfolio" className="s28-btn s28-btn-ghost">
+              View Portfolio
+            </Link>
             <CallNowButton variant="gold" />
           </div>
         </div>

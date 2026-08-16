@@ -9,6 +9,7 @@ const LINKS = [
   { to: "/services", label: "Services" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
+  { to: "/admin", label: "Admin" },
 ];
 
 export default function Navbar() {
@@ -31,8 +32,15 @@ export default function Navbar() {
         <div className="s28-nav-cta">
           <CallNowButton variant="gold" label="Call Now" />
         </div>
-        <button className="s28-burger" aria-label="Menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-          <span /><span /><span />
+        <button
+          className="s28-burger"
+          aria-label="Menu"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span />
+          <span />
+          <span />
         </button>
       </div>
       <div className={`s28-mobile ${open ? "open" : ""}`}>

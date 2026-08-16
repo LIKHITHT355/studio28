@@ -1,5 +1,3 @@
-import CallNowButton from "./CallNowButton";
-
 export default function ServiceCard({ title, desc }) {
   return (
     <article className="s28-service-card">
