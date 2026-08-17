@@ -74,23 +74,29 @@ export const uploadImage = createServerFn({ method: "POST" })
       throw new Error("Invalid file format. Only JPG, PNG, and WebP images are allowed.");
     }
 
-    // Unique timestamped filename to prevent stale browser / CDN caching
     const timestamp = Date.now();
     const uniqueSuffix = Math.random().toString(36).substring(2, 7);
     const cleanFileName = data.fileName
       ? `${timestamp}-${uniqueSuffix}-${data.fileName.replace(/[^a-zA-Z0-9.-]/g, "_")}`
       : `image-${timestamp}-${uniqueSuffix}.jpg`;
 
-    const { connectToDatabase, Image } = await import("./db");
-    await connectToDatabase();
+    const { connectToDatabase, Image, withTimeout } = await import("./db");
+    const db = await connectToDatabase();
+    if (!db) {
+      throw new Error("Database is not reachable. Please check your MONGODB_URI configuration.");
+    }
 
-    const newImage = await Image.create({
-      category: data.category,
-      data: data.data,
-      fileName: cleanFileName,
-      uploadedBy: adminUsername,
-      createdAt: new Date(),
-    });
+    const newImage = await withTimeout(
+      Image.create({
+        category: data.category,
+        data: data.data,
+        fileName: cleanFileName,
+        uploadedBy: adminUsername,
+        createdAt: new Date(),
+      }),
+      8000,
+      "Image upload operation timed out"
+    );
 
     return {
       success: true,
@@ -110,33 +116,65 @@ export const getImages = createServerFn({ method: "GET" })
   .validator((category?: string) => category)
   .handler(async ({ data: category }) => {
     setResponseHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-    const { connectToDatabase, Image, seedImagesIfEmpty } = await import("./db");
-    await connectToDatabase();
-    await seedImagesIfEmpty();
+    const { connectToDatabase, Image, DEFAULT_SEED_IMAGES, seedImagesIfEmpty, withTimeout } = await import("./db");
 
-    interface ImageDoc {
-      _id: { toString(): string };
-      category: string;
-      data: string;
-      fileName?: string;
-      uploadedBy?: string;
-      createdAt?: Date;
-    }
-
-    const query = category && category !== "All" ? { category } : {};
-    const images = (await Image.find(query)
-      .sort({ createdAt: -1 })
-      .lean()) as unknown as ImageDoc[];
-
-    return images.map((img) => ({
-      id: img._id.toString(),
+    const fallbackList = DEFAULT_SEED_IMAGES.map((img) => ({
+      id: img.id,
       cat: img.category,
       src: img.data,
-      fileName: img.fileName || "image.jpg",
-      uploadedBy: img.uploadedBy || "admin",
-      createdAt: (img.createdAt ? new Date(img.createdAt) : new Date()).toISOString(),
+      fileName: img.fileName,
+      uploadedBy: img.uploadedBy,
+      createdAt: img.createdAt.toISOString(),
       alt: `${img.category} showcase image`,
     }));
+
+    try {
+      const db = await connectToDatabase();
+      if (!db) {
+        return category && category !== "All"
+          ? fallbackList.filter((img) => img.cat.toLowerCase() === category.toLowerCase())
+          : fallbackList;
+      }
+
+      await seedImagesIfEmpty();
+
+      interface ImageDoc {
+        _id: { toString(): string };
+        category: string;
+        data: string;
+        fileName?: string;
+        uploadedBy?: string;
+        createdAt?: Date;
+      }
+
+      const query = category && category !== "All" ? { category } : {};
+      const images = (await withTimeout(
+        Image.find(query).sort({ createdAt: -1 }).lean(),
+        4000,
+        "Fetch images timed out"
+      )) as unknown as ImageDoc[];
+
+      if (!images || images.length === 0) {
+        return category && category !== "All"
+          ? fallbackList.filter((img) => img.cat.toLowerCase() === category.toLowerCase())
+          : fallbackList;
+      }
+
+      return images.map((img) => ({
+        id: img._id.toString(),
+        cat: img.category,
+        src: img.data,
+        fileName: img.fileName || "image.jpg",
+        uploadedBy: img.uploadedBy || "admin",
+        createdAt: (img.createdAt ? new Date(img.createdAt) : new Date()).toISOString(),
+        alt: `${img.category} showcase image`,
+      }));
+    } catch (err) {
+      console.warn("getImages encountered error, using fallback seed images:", (err as Error).message);
+      return category && category !== "All"
+        ? fallbackList.filter((img) => img.cat.toLowerCase() === category.toLowerCase())
+        : fallbackList;
+    }
   });
 
 export const deleteImage = createServerFn({ method: "POST" })
@@ -144,10 +182,18 @@ export const deleteImage = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     setResponseHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
     await requireAuth();
-    const { connectToDatabase, Image } = await import("./db");
-    await connectToDatabase();
+    const { connectToDatabase, Image, withTimeout } = await import("./db");
+    const db = await connectToDatabase();
+    if (!db) {
+      throw new Error("Database is not reachable.");
+    }
 
-    const result = await Image.findByIdAndDelete(data.id);
+    const result = await withTimeout(
+      Image.findByIdAndDelete(data.id),
+      5000,
+      "Delete operation timed out"
+    );
+
     if (!result) {
       throw new Error("Image not found or already deleted.");
     }
@@ -157,11 +203,14 @@ export const deleteImage = createServerFn({ method: "POST" })
 export const resetGallery = createServerFn({ method: "POST" }).handler(async () => {
   setResponseHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
   await requireAuth();
-  const { connectToDatabase, Image, DEFAULT_SEED_IMAGES } = await import("./db");
-  await connectToDatabase();
+  const { connectToDatabase, Image, DEFAULT_SEED_IMAGES, withTimeout } = await import("./db");
+  const db = await connectToDatabase();
+  if (!db) {
+    throw new Error("Database is not reachable.");
+  }
 
-  await Image.deleteMany({});
-  await Image.insertMany(DEFAULT_SEED_IMAGES);
+  await withTimeout(Image.deleteMany({}), 5000, "Reset delete timed out");
+  await withTimeout(Image.insertMany(DEFAULT_SEED_IMAGES), 5000, "Reset insert timed out");
 
   return { success: true };
 });
