@@ -1,5 +1,4 @@
 # Studios 28
-
 Photography studio portfolio website for Studios 28, Bangalore.
 
 Live at [studios28.in](https://studios28.in)
