@@ -56,6 +56,7 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
 
   if (!cached.promise) {
     const opts = {
+      dbName: "studios28",
       bufferCommands: false,
       autoIndex: false,
       maxPoolSize: 1,
