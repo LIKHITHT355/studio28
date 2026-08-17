@@ -28,16 +28,17 @@ export async function loginAdmin({
   const username = data.username.trim();
   const password = data.password.trim();
 
-  // Standard admin credentials: admin / changeme (or admin / admin)
-  if (
-    (username.toLowerCase() === "admin" && (password === "changeme" || password === "admin")) ||
-    (username.length >= 3 && password.length >= 6)
-  ) {
+  if (!username || !password) {
+    throw new Error("Please enter both username and password.");
+  }
+
+  // Validate admin login requirements
+  if (username.length >= 3 && password.length >= 6) {
     setStoredAuth(username);
     return { success: true, username };
   }
 
-  throw new Error("Invalid username or password. Default credentials are admin / changeme");
+  throw new Error("Invalid username or password. Password must be at least 6 characters.");
 }
 
 export async function logoutAdmin(): Promise<{ success: boolean }> {

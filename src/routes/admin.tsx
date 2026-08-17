@@ -186,20 +186,6 @@ function LoginForm() {
           <p style={{ color: "#9a9184", fontSize: "0.9rem", marginTop: 6 }}>
             Sign in to manage Studios 28 portfolio assets
           </p>
-          <div
-            style={{
-              display: "inline-block",
-              marginTop: 10,
-              padding: "4px 10px",
-              background: "rgba(184, 151, 90, 0.1)",
-              border: "1px solid rgba(184, 151, 90, 0.25)",
-              borderRadius: 4,
-              fontSize: 12,
-              color: "#d4af37",
-            }}
-          >
-            Default credentials: <strong>admin</strong> / <strong>changeme</strong>
-          </div>
         </div>
 
         {error && (
