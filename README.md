@@ -1,29 +1,34 @@
-# Welcome to your Lovable project
+# Studios 28
 
-This project was built with [Lovable](https://lovable.dev).
+Photography studio portfolio website for Studios 28, Bangalore.
 
-## Build with Lovable
-
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
+Live at [studios28.in](https://studios28.in)
 
 ## Built with
-
 - TanStack Start
 - TypeScript
 - React
 - Tailwind CSS
+- MongoDB (via Mongoose)
+- Cloudflare Workers (deployment)
+
+## Features
+- Public portfolio gallery with category-based filtering (Wedding, Pre-Wedding, Portrait, Events, Other)
+- Admin dashboard for managing gallery assets
+- Image uploads via Cloudinary integration
+
+## Development
+
+```bash
+bun install
+bun run dev
+```
+
+## Deployment
+
+Deployed automatically via Cloudflare Workers on push to `main`.
+
+```bash
+bun run build
+npx wrangler deploy
+```
