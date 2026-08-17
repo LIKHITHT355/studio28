@@ -1,15 +1,34 @@
 import mongoose, { Model } from "mongoose";
 import bcrypt from "bcryptjs";
 
-// MongoDB Connection
+// Fix Node.js DNS resolution issues (querySRV EBADQUERY) on Windows/local networks
+if (typeof process !== "undefined" && process.release?.name === "node") {
+  try {
+    const dns = await import("node:dns");
+    if (dns && typeof dns.setServers === "function") {
+      dns.setServers(["8.8.8.8", "1.1.1.1", "8.8.4.4"]);
+    }
+  } catch {
+    // Non-Node or restricted environment fallback
+  }
+}
+
+// Universal MongoDB URI extraction across local, Vite, SSR, and Cloudflare Workers
 function getMongoUri(): string {
-  const uri = process.env.MONGODB_URI;
-  if (!uri || uri.trim() === "") {
+  const uri =
+    process.env.MONGODB_URI ||
+    (typeof import.meta !== "undefined" && import.meta.env
+      ? import.meta.env.MONGODB_URI || import.meta.env.VITE_MONGODB_URI
+      : undefined) ||
+    (globalThis as Record<string, unknown>).MONGODB_URI ||
+    (globalThis as { process?: { env?: Record<string, string> } })?.process?.env?.MONGODB_URI;
+
+  if (!uri || String(uri).trim() === "") {
     throw new Error(
-      "MONGODB_URI environment variable is not defined. Please set MONGODB_URI in your environment or .env file."
+      "MONGODB_URI environment variable is not defined. Please ensure MONGODB_URI is configured in your .env file locally or in your deployment dashboard (Cloudflare Workers / hosting) environment variables."
     );
   }
-  return uri.trim();
+  return String(uri).trim();
 }
 
 interface MongooseCache {
@@ -38,8 +57,8 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
     };
 
     const uri = getMongoUri();
