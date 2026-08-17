@@ -8,6 +8,7 @@ import {
   uploadImage,
   getImages,
   deleteImage,
+  resetGallery,
 } from "../lib/actions";
 import PageLayout from "../studio/layouts/PageLayout";
 import { CATEGORIES } from "../studio/config";
@@ -25,6 +26,7 @@ import {
   Layers,
   Calendar,
   UserCheck,
+  RotateCcw,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -184,6 +186,20 @@ function LoginForm() {
           <p style={{ color: "#9a9184", fontSize: "0.9rem", marginTop: 6 }}>
             Sign in to manage Studios 28 portfolio assets
           </p>
+          <div
+            style={{
+              display: "inline-block",
+              marginTop: 10,
+              padding: "4px 10px",
+              background: "rgba(184, 151, 90, 0.1)",
+              border: "1px solid rgba(184, 151, 90, 0.25)",
+              borderRadius: 4,
+              fontSize: 12,
+              color: "#d4af37",
+            }}
+          >
+            Default credentials: <strong>admin</strong> / <strong>changeme</strong>
+          </div>
         </div>
 
         {error && (
@@ -404,6 +420,18 @@ function AdminDashboard({ username }: { username: string }) {
     },
   });
 
+  const resetMutation = useMutation({
+    mutationFn: () => resetGallery(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["images"] });
+      setUploadSuccess("Gallery has been reset to default showcase imagery.");
+      setTimeout(() => setUploadSuccess(null), 4000);
+    },
+    onError: (err: Error) => {
+      alert(err.message || "Failed to reset gallery.");
+    },
+  });
+
   const handleFileSelection = (file: File | null) => {
     setUploadError(null);
     setUploadSuccess(null);
@@ -528,27 +556,59 @@ function AdminDashboard({ username }: { username: string }) {
           </div>
         </div>
 
-        <button
-          onClick={() => logoutMutation.mutate()}
-          disabled={logoutMutation.isPending}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 18px",
-            borderRadius: 6,
-            background: "#24201c",
-            border: "1px solid #3d362f",
-            color: "#e6e0d6",
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
-        >
-          <LogOut size={16} />
-          <span>{logoutMutation.isPending ? "Logging out..." : "Sign Out"}</span>
-        </button>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <button
+            onClick={() => {
+              if (
+                window.confirm(
+                  "Reset gallery to original showcase images? This will restore all default portfolio assets.",
+                )
+              ) {
+                resetMutation.mutate();
+              }
+            }}
+            disabled={resetMutation.isPending}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 16px",
+              borderRadius: 6,
+              background: "#24201c",
+              border: "1px solid #3d362f",
+              color: "#c7bfb5",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            <RotateCcw size={15} />
+            <span>{resetMutation.isPending ? "Resetting..." : "Reset Defaults"}</span>
+          </button>
+
+          <button
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 18px",
+              borderRadius: 6,
+              background: "#24201c",
+              border: "1px solid #3d362f",
+              color: "#e6e0d6",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            <LogOut size={16} />
+            <span>{logoutMutation.isPending ? "Logging out..." : "Sign Out"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Upload Section */}
