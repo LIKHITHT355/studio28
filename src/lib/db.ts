@@ -2,9 +2,15 @@ import mongoose, { Model } from "mongoose";
 import bcrypt from "bcryptjs";
 
 // MongoDB Connection
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  "mongodb+srv://llikilaki_db_user:k2miEZb9LUMcOYLU@studio28db.sqmbhrc.mongodb.net/?appName=studio28db";
+function getMongoUri(): string {
+  const uri = process.env.MONGODB_URI;
+  if (!uri || uri.trim() === "") {
+    throw new Error(
+      "MONGODB_URI environment variable is not defined. Please set MONGODB_URI in your environment or .env file."
+    );
+  }
+  return uri.trim();
+}
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -36,7 +42,7 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
       connectTimeoutMS: 10000,
     };
 
-    const uri = process.env.MONGODB_URI || MONGODB_URI;
+    const uri = getMongoUri();
 
     cached.promise = mongoose.connect(uri, opts).then((m) => {
       console.log("Connected to MongoDB Atlas");
