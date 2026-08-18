@@ -9,6 +9,7 @@ export interface GalleryImage {
   uploadedBy?: string;
   createdAt: string;
   alt: string;
+  imageFileId?: string;
 }
 
 // Check admin authentication from session cookie
@@ -59,20 +60,20 @@ export const checkAuth = createServerFn({ method: "GET" }).handler(async () => {
   return { authenticated: true, username: token };
 });
 
+/**
+ * Helper: Get current time in HH:MM:SS format for terminal logging
+ */
+function getTimestamp(): string {
+  const now = new Date();
+  return [now.getHours(), now.getMinutes(), now.getSeconds()]
+    .map((v) => String(v).padStart(2, "0"))
+    .join(":");
+}
+
 export const uploadImage = createServerFn({ method: "POST" })
   .validator((data: { category: string; data: string; fileName?: string }) => data)
   .handler(async ({ data }) => {
     setResponseHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-    const adminUsername = await requireAuth();
-
-    if (!data.category || !data.data) {
-      throw new Error("Category and image data are required.");
-    }
-
-    // Validate format
-    if (!data.data.startsWith("data:image/") && !data.data.startsWith("http")) {
-      throw new Error("Invalid file format. Only JPG, PNG, and WebP images are allowed.");
-    }
 
     const timestamp = Date.now();
     const uniqueSuffix = Math.random().toString(36).substring(2, 7);
@@ -80,84 +81,231 @@ export const uploadImage = createServerFn({ method: "POST" })
       ? `${timestamp}-${uniqueSuffix}-${data.fileName.replace(/[^a-zA-Z0-9.-]/g, "_")}`
       : `image-${timestamp}-${uniqueSuffix}.jpg`;
 
-    const { connectToDatabase, Image, withTimeout } = await import("./db");
-    const db = await connectToDatabase();
-    if (!db) {
-      throw new Error("Database is not reachable. Please check your MONGODB_URI configuration.");
+    let adminUsername: string;
+    let ikResult: { fileId: string; url: string; size: number } | null = null;
+
+    // ─────────────────────────────────────────────────────────────────
+    // STEP 1: UPLOAD TO IMAGEKIT (with verification)
+    // ─────────────────────────────────────────────────────────────────
+    try {
+      const step1Start = getTimestamp();
+      console.log(`[${step1Start}] STEP 1 START → ImageKit upload and verification`);
+
+      try {
+        adminUsername = await requireAuth();
+      } catch (authErr) {
+        console.error("[STEP 1 - Auth Failed]", authErr);
+        throw authErr;
+      }
+
+      if (!data.category || !data.data) {
+        throw new Error("Category and image data are required.");
+      }
+
+      // Validate format
+      if (!data.data.startsWith("data:image/") && !data.data.startsWith("http")) {
+        throw new Error("Invalid file format. Only JPG, PNG, and WebP images are allowed.");
+      }
+
+      // Import ImageKit utility
+      const { uploadImageToImageKit } = await import("./imagekit");
+
+      // Perform the upload
+      ikResult = await uploadImageToImageKit(data.data, cleanFileName, data.category);
+
+      if (!ikResult || !ikResult.fileId || !ikResult.url) {
+        throw new Error("ImageKit upload did not return a valid fileId or URL.");
+      }
+
+      console.log("[UPLOAD] ImageKit success:", {
+        fileId: ikResult.fileId,
+        url: ikResult.url,
+        size: ikResult.size,
+      });
+
+      // uploadImageToImageKit already performs an ImageKit file-details lookup
+      // and rejects missing or zero-byte files. Do not make that same API call
+      // a second time here: it adds latency to every upload without adding a
+      // new validation boundary.
+      if (ikResult.size <= 0) {
+        throw new Error(
+          `ImageKit verification failed: File size is ${ikResult.size} bytes (corrupt/empty).`
+        );
+      }
+
+      console.log("[UPLOAD] ImageKit verification passed:", {
+        fileId: ikResult.fileId,
+        verifiedSize: ikResult.size,
+      });
+
+      const step1End = getTimestamp();
+      console.log(`[${step1End}] STEP 1 DONE → ImageKit upload + verification succeeded`);
+    } catch (step1Err) {
+      const step1Error = step1Err instanceof Error ? step1Err.message : String(step1Err);
+      console.error("[UPLOAD] ImageKit failed:", step1Error);
+      console.error(`[${getTimestamp()}] STEP 1 FAILED → stopping pipeline`);
+      throw new Error(`[STEP 1 FAILED] ImageKit upload: ${step1Error}`);
     }
 
-    const newImage = await withTimeout(
-      Image.create({
-        category: data.category,
-        data: data.data,
-        fileName: cleanFileName,
-        uploadedBy: adminUsername,
-        createdAt: new Date(),
-      }),
-      8000,
-      "Image upload operation timed out"
-    );
+    // Database access starts only after the upload helper has returned a
+    // verified ImageKit file. Each operation owns its Worker-safe connection.
+    const { withImageDatabase, withTimeout } = await import("./db");
 
-    return {
-      success: true,
-      image: {
-        id: newImage._id.toString(),
-        cat: newImage.category,
-        src: newImage.data,
-        fileName: newImage.fileName,
-        uploadedBy: newImage.uploadedBy,
-        createdAt: newImage.createdAt.toISOString(),
-        alt: `${newImage.category} showcase image`,
-      },
-    };
+    // ─────────────────────────────────────────────────────────────────
+    // STEP 2: SAVE TO DATABASE (only if Step 1 succeeded)
+    // ─────────────────────────────────────────────────────────────────
+    let savedImageId: string | null = null;
+
+    try {
+      const step2Start = getTimestamp();
+      console.log(`[${step2Start}] STEP 2 START → MongoDB save`);
+
+      const newImage = await withImageDatabase(async (Image) => {
+        const newImageDoc = new Image({
+          category: data.category,
+          data: ikResult!.url,
+          imageFileId: ikResult!.fileId,
+          fileName: cleanFileName,
+          uploadedBy: adminUsername!,
+          createdAt: new Date(),
+        });
+        return withTimeout(
+          newImageDoc.save(),
+          30000,
+          "Database save operation timed out after 30 seconds"
+        );
+      });
+
+      savedImageId = newImage._id.toString();
+
+      console.log("[DB] Saved image doc:", {
+        _id: savedImageId,
+        fileId: ikResult!.fileId,
+      });
+
+      const step2End = getTimestamp();
+      console.log(`[${step2End}] STEP 2 DONE → MongoDB save succeeded`);
+    } catch (step2Err) {
+      const step2Error = step2Err instanceof Error ? step2Err.message : String(step2Err);
+      console.error("[DB] Save failed:", step2Error);
+      console.error(`[${getTimestamp()}] STEP 2 FAILED → stopping pipeline, orphaned ImageKit fileId:`, ikResult?.fileId);
+
+      // Do not delete a verified ImageKit file just because MongoDB failed.
+      // The URL is returned in the error so the asset can be opened directly
+      // or recovered into the database after connectivity is restored.
+      throw new Error(
+        `[STEP 2 FAILED] MongoDB save: ${step2Error}. ImageKit file was retained: ${ikResult?.url} (fileId: ${ikResult?.fileId})`
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // STEP 3: RENDER IN UI (verify in fresh DB fetch, only if Step 2 succeeded)
+    // Reuses existing DB connection from earlier
+    // ─────────────────────────────────────────────────────────────────
+    try {
+      const step3Start = getTimestamp();
+      console.log(`[${step3Start}] STEP 3 START → re-fetch images and verify presence`);
+
+      // Re-fetch ALL images (not filtered, not cached) to verify the new one is present
+      interface ImageDoc {
+        _id: { toString(): string };
+        category: string;
+        data: string;
+        imageFileId?: string;
+        fileName?: string;
+        uploadedBy?: string;
+        createdAt?: Date;
+      }
+
+      const allImages = (await withImageDatabase((Image) =>
+        withTimeout(
+          Image.find({}).sort({ createdAt: -1 }).lean().maxTimeMS(25000).exec(),
+          30000,
+          "Final re-fetch images timed out"
+        )
+      )) as unknown as ImageDoc[];
+
+      // Verify newly uploaded image is present
+      const newImagePresent = allImages.some((img) => img._id.toString() === savedImageId);
+
+      console.log("[RENDER] New image present in fetched list:", newImagePresent);
+
+      if (!newImagePresent) {
+        throw new Error(
+          `Verification failed: Newly saved image (ID: ${savedImageId}) not found in re-fetched list.`
+        );
+      }
+
+      // Build gallery response from fresh fetch
+      const galleryData = allImages.map((img) => ({
+        id: img._id.toString(),
+        cat: img.category,
+        src: img.data,
+        fileName: img.fileName || "image.jpg",
+        uploadedBy: img.uploadedBy || "admin",
+        createdAt: (img.createdAt ? new Date(img.createdAt) : new Date()).toISOString(),
+        alt: `${img.category} showcase image`,
+        imageFileId: img.imageFileId,
+      }));
+
+      const step3End = getTimestamp();
+      console.log(`[${step3End}] STEP 3 DONE → re-fetch and verification succeeded, gallery rendered`);
+
+      // Return the newly uploaded image details
+      const newImageDetail = galleryData.find((img) => img.id === savedImageId);
+
+      return {
+        success: true,
+        image: newImageDetail || {
+          id: savedImageId,
+          cat: data.category,
+          src: ikResult!.url,
+          fileName: cleanFileName,
+          uploadedBy: adminUsername!,
+          createdAt: new Date().toISOString(),
+          alt: `${data.category} showcase image`,
+          imageFileId: ikResult!.fileId,
+        },
+      };
+    } catch (step3Err) {
+      const step3Error = step3Err instanceof Error ? step3Err.message : String(step3Err);
+      console.error("[RENDER] Verification/fetch failed:", step3Error);
+      console.error(`[${getTimestamp()}] STEP 3 FAILED → pipeline error`);
+
+      throw new Error(`[STEP 3 FAILED] UI render verification: ${step3Error}`);
+    }
   });
 
 export const getImages = createServerFn({ method: "GET" })
   .validator((category?: string) => category)
   .handler(async ({ data: category }) => {
     setResponseHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-    const { connectToDatabase, Image, DEFAULT_SEED_IMAGES, seedImagesIfEmpty, withTimeout } = await import("./db");
-
-    const fallbackList = DEFAULT_SEED_IMAGES.map((img) => ({
-      id: img.id,
-      cat: img.category,
-      src: img.data,
-      fileName: img.fileName,
-      uploadedBy: img.uploadedBy,
-      createdAt: img.createdAt.toISOString(),
-      alt: `${img.category} showcase image`,
-    }));
+    const { withImageDatabase, withTimeout } = await import("./db");
 
     try {
-      const db = await connectToDatabase();
-      if (!db) {
-        return category && category !== "All"
-          ? fallbackList.filter((img) => img.cat.toLowerCase() === category.toLowerCase())
-          : fallbackList;
-      }
-
-      await seedImagesIfEmpty();
-
       interface ImageDoc {
         _id: { toString(): string };
         category: string;
         data: string;
+        imageFileId?: string;
         fileName?: string;
         uploadedBy?: string;
         createdAt?: Date;
       }
 
-      const query = category && category !== "All" ? { category } : {};
-      const images = (await withTimeout(
-        Image.find(query).sort({ createdAt: -1 }).lean(),
-        4000,
-        "Fetch images timed out"
+      const query = category && category !== "All" ? { category: { $regex: new RegExp(`^${category}$`, "i") } } : {};
+      const images = (await withImageDatabase((Image) =>
+        withTimeout(
+          // maxTimeMS makes MongoDB terminate the query too. Promise.race alone
+          // only stops waiting and leaves a slow query running in the Worker.
+          Image.find(query).sort({ createdAt: -1 }).lean().maxTimeMS(10000).exec(),
+          12000,
+          "Fetch images timed out"
+        )
       )) as unknown as ImageDoc[];
 
       if (!images || images.length === 0) {
-        return category && category !== "All"
-          ? fallbackList.filter((img) => img.cat.toLowerCase() === category.toLowerCase())
-          : fallbackList;
+        return [];
       }
 
       return images.map((img) => ({
@@ -168,12 +316,14 @@ export const getImages = createServerFn({ method: "GET" })
         uploadedBy: img.uploadedBy || "admin",
         createdAt: (img.createdAt ? new Date(img.createdAt) : new Date()).toISOString(),
         alt: `${img.category} showcase image`,
+        imageFileId: img.imageFileId,
       }));
     } catch (err) {
-      console.warn("getImages encountered error, using fallback seed images:", (err as Error).message);
-      return category && category !== "All"
-        ? fallbackList.filter((img) => img.cat.toLowerCase() === category.toLowerCase())
-        : fallbackList;
+      console.warn("getImages encountered error:", (err as Error).message);
+      // Returning [] turns a database outage into a successful empty-gallery
+      // response. Throw so React Query preserves its previous cache and shows
+      // a real error state instead.
+      throw err;
     }
   });
 
@@ -188,15 +338,30 @@ export const deleteImage = createServerFn({ method: "POST" })
       throw new Error("Database is not reachable.");
     }
 
-    const result = await withTimeout(
+    // First find the document to get its imageFileId
+    const existing = await withTimeout(
+      Image.findById(data.id).lean(),
+      5000,
+      "Find operation timed out"
+    ) as { imageFileId?: string } | null;
+
+    if (!existing) {
+      throw new Error("Image not found or already deleted.");
+    }
+
+    // Delete from ImageKit if this image has a fileId (new uploads)
+    if (existing.imageFileId) {
+      const { deleteImageFromImageKit } = await import("./imagekit");
+      await deleteImageFromImageKit(existing.imageFileId);
+    }
+
+    // Delete from MongoDB
+    await withTimeout(
       Image.findByIdAndDelete(data.id),
       5000,
       "Delete operation timed out"
     );
 
-    if (!result) {
-      throw new Error("Image not found or already deleted.");
-    }
     return { success: true };
   });
 
@@ -207,6 +372,26 @@ export const resetGallery = createServerFn({ method: "POST" }).handler(async () 
   const db = await connectToDatabase();
   if (!db) {
     throw new Error("Database is not reachable.");
+  }
+
+  // Best-effort: delete ImageKit files for any images that have fileIds
+  try {
+    const imagesWithFileIds = await withTimeout(
+      Image.find({ imageFileId: { $exists: true, $ne: null } }).select("imageFileId").lean(),
+      5000,
+      "Fetch imageFileIds timed out"
+    ) as { imageFileId?: string }[];
+
+    if (imagesWithFileIds.length > 0) {
+      const { deleteImageFromImageKit } = await import("./imagekit");
+      await Promise.allSettled(
+        imagesWithFileIds.map((img) =>
+          img.imageFileId ? deleteImageFromImageKit(img.imageFileId) : Promise.resolve()
+        )
+      );
+    }
+  } catch (err) {
+    console.warn("Could not clean up ImageKit files during gallery reset:", (err as Error).message);
   }
 
   await withTimeout(Image.deleteMany({}), 5000, "Reset delete timed out");

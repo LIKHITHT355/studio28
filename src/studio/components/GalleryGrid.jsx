@@ -21,6 +21,14 @@ export default function GalleryGrid({ items, masonry = false }) {
 
   const cls = masonry ? "s28-gallery" : "s28-featured-grid";
 
+  if (!items || items.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "48px 16px", color: "var(--s28-muted)" }}>
+        <p style={{ margin: 0, fontSize: "1rem" }}>No images found in this category yet.</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className={cls}>

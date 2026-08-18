@@ -1,14 +1,41 @@
 import mongoose, { Model } from "mongoose";
 
-// Universal MongoDB URI extraction across local, Vite, SSR, and Cloudflare Workers
+// Universal MongoDB URI extraction across local dev, Vite, SSR, and Cloudflare Workers
 function getMongoUri(): string {
-  const uri =
+  let uri =
     process.env.MONGODB_URI ||
     (typeof import.meta !== "undefined" && import.meta.env
       ? import.meta.env.MONGODB_URI || import.meta.env.VITE_MONGODB_URI
       : undefined) ||
     (globalThis as Record<string, unknown>).MONGODB_URI ||
     (globalThis as { process?: { env?: Record<string, string> } })?.process?.env?.MONGODB_URI;
+
+  // If process.env wasn't populated in long-running dev server, read directly from .env on disk
+  if (!uri && typeof process !== "undefined" && process.cwd) {
+    try {
+      const fs = require("node:fs");
+      const path = require("node:path");
+      const envPath = path.resolve(process.cwd(), ".env");
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, "utf-8");
+        for (const line of content.split("\n")) {
+          const trimmed = line.trim();
+          if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
+            const idx = trimmed.indexOf("=");
+            const key = trimmed.substring(0, idx).trim();
+            const val = trimmed.substring(idx + 1).trim();
+            if (key === "MONGODB_URI") {
+              uri = val;
+              process.env.MONGODB_URI = val;
+              break;
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore in worker environment
+    }
+  }
 
   if (!uri || String(uri).trim() === "") {
     return "";
@@ -34,8 +61,12 @@ if (!globalThis.mongooseCache) {
   globalThis.mongooseCache = cached;
 }
 
-// Timeout wrapper to guarantee Worker never hangs
-export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+// Timeout wrapper to guarantee Worker and server calls never hang indefinitely
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> {
   let timer: NodeJS.Timeout;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
@@ -46,7 +77,7 @@ export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, err
 export async function connectToDatabase(): Promise<typeof mongoose | null> {
   const uri = getMongoUri();
   if (!uri) {
-    console.warn("MONGODB_URI not configured, operating with seed images");
+    console.warn("MONGODB_URI not found in environment or .env file.");
     return null;
   }
 
@@ -54,30 +85,39 @@ export async function connectToDatabase(): Promise<typeof mongoose | null> {
     return cached.conn;
   }
 
+  // Reset promise if previous attempt was closed or disconnected
+  if (mongoose.connection.readyState === 0 || mongoose.connection.readyState === 3) {
+    cached.promise = null;
+    cached.conn = null;
+  }
+
   if (!cached.promise) {
     const opts = {
       dbName: "studios28",
-      bufferCommands: false,
       autoIndex: false,
-      maxPoolSize: 1,
+      // Do not pre-warm connections in a Worker, but retain enough capacity
+      // for the upload save and concurrent gallery reads. A pool of five with
+      // a 10s wait queue caused real uploads to fail at checkout under load.
+      maxPoolSize: 20,
       minPoolSize: 0,
-      serverSelectionTimeoutMS: 4000,
-      connectTimeoutMS: 4000,
-      socketTimeoutMS: 8000,
-      family: 4,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
+      maxIdleTimeMS: 60000,
+      waitQueueTimeoutMS: 30000,
     };
 
     cached.promise = mongoose.connect(uri, opts).then((m) => {
-      console.log("Connected to MongoDB Atlas");
+      console.log("Connected to MongoDB Atlas (studios28)");
       return m;
     });
   }
 
   try {
-    cached.conn = await withTimeout(cached.promise, 4500, "MongoDB connection timed out");
+    cached.conn = await withTimeout(cached.promise, 10000, "MongoDB connection timed out after 10s");
     return cached.conn;
   } catch (e) {
-    console.warn("MongoDB connection failed or timed out:", (e as Error).message);
+    console.error("MongoDB connection failed:", (e as Error).message);
     cached.promise = null;
     cached.conn = null;
     return null;
@@ -102,6 +142,7 @@ export const User: Model<IUser> =
 export interface IImage {
   category: string;
   data: string;
+  imageFileId?: string;
   fileName: string;
   uploadedBy: string;
   createdAt: Date;
@@ -110,6 +151,7 @@ export interface IImage {
 const ImageSchema = new mongoose.Schema<IImage>({
   category: { type: String, required: true, index: true },
   data: { type: String, required: true },
+  imageFileId: { type: String },
   fileName: { type: String, default: "image.jpg" },
   uploadedBy: { type: String, default: "admin" },
   createdAt: { type: Date, default: Date.now, index: true },
@@ -117,6 +159,49 @@ const ImageSchema = new mongoose.Schema<IImage>({
 
 export const Image: Model<IImage> =
   (mongoose.models.Image as Model<IImage>) || mongoose.model<IImage>("Image", ImageSchema);
+
+/**
+ * Run one gallery operation using a connection owned by the current request.
+ * Cloudflare Workers must not reuse database I/O created by a previous request;
+ * the global Mongoose cache above is retained only for non-gallery legacy code.
+ */
+export async function withImageDatabase<T>(
+  operation: (image: Model<IImage>) => Promise<T>
+): Promise<T> {
+  const uri = getMongoUri();
+  if (!uri) {
+    throw new Error("MONGODB_URI not found in environment or .env file.");
+  }
+
+  const connection = mongoose.createConnection(uri, {
+    dbName: "studios28",
+    autoIndex: false,
+    bufferCommands: false,
+    maxPoolSize: 1,
+    minPoolSize: 0,
+    serverSelectionTimeoutMS: 15000,
+    connectTimeoutMS: 15000,
+    socketTimeoutMS: 45000,
+    waitQueueTimeoutMS: 15000,
+    family: 4,
+  });
+
+  try {
+    await withTimeout(
+      connection.asPromise(),
+      20000,
+      "MongoDB connection timed out after 20 seconds"
+    );
+    const image =
+      (connection.models.Image as Model<IImage>) ||
+      connection.model<IImage>("Image", ImageSchema);
+    return await operation(image);
+  } finally {
+    await connection.close().catch((err) => {
+      console.warn("MongoDB request connection close failed:", (err as Error).message);
+    });
+  }
+}
 
 export const DEFAULT_SEED_IMAGES = [
   {
@@ -241,17 +326,7 @@ export const DEFAULT_SEED_IMAGES = [
   },
 ];
 
-// Seed images if database is empty
+// Seed images helper (disabled from auto-running; available only if manually called)
 export async function seedImagesIfEmpty(): Promise<void> {
-  const db = await connectToDatabase();
-  if (!db) return;
-  try {
-    const count = await withTimeout(Image.countDocuments(), 3000, "Count timeout");
-    if (count === 0) {
-      console.log("Seeding initial gallery showcase images into MongoDB Atlas...");
-      await withTimeout(Image.insertMany(DEFAULT_SEED_IMAGES), 4000, "Seed insert timeout");
-    }
-  } catch (err) {
-    console.warn("Could not check/seed images in MongoDB:", (err as Error).message);
-  }
+  // No-op: Auto-seeding is disabled so only authentic database records are served.
 }

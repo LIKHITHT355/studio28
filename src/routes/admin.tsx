@@ -10,6 +10,7 @@ import {
   deleteImage,
   resetGallery,
 } from "../lib/actions";
+import type { GalleryImage } from "../lib/actions";
 import PageLayout from "../studio/layouts/PageLayout";
 import { CATEGORIES } from "../studio/config";
 import {
@@ -382,8 +383,17 @@ function AdminDashboard({ username }: { username: string }) {
           fileName,
         },
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["images"] });
+    onSuccess: (result) => {
+      // The server action has already uploaded, saved, and re-fetched this
+      // image. Put that verified result in the UI immediately instead of
+      // making visibility depend on a second database read.
+      queryClient.setQueryData<GalleryImage[]>(["images"], (current = []) => [
+        result.image,
+        ...current.filter((image) => image.id !== result.image.id),
+      ]);
+      // Keep the cache reconciled when the database is healthy, but don't make
+      // the successful upload disappear while this background read is pending.
+      queryClient.invalidateQueries({ queryKey: ["images"], refetchType: "inactive" });
       setSelectedFile(null);
       setPreviewUrl(null);
       setUploadError(null);
@@ -776,7 +786,7 @@ function AdminDashboard({ username }: { username: string }) {
                       animation: "spin 1s linear infinite",
                     }}
                   />
-                  <span>Uploading to Database...</span>
+                  <span>Uploading...</span>
                 </>
               ) : (
                 <>
@@ -959,6 +969,31 @@ function AdminDashboard({ username }: { username: string }) {
               }}
             />
             <p style={{ fontSize: 14 }}>Loading showcase images...</p>
+          </div>
+        ) : (!images || images.length === 0) ? (
+          <div
+            style={{
+              padding: "60px 20px",
+              textAlign: "center",
+              background: "#13110f",
+              borderRadius: 8,
+              border: "1px dashed #332d26",
+            }}
+          >
+            <ImageIcon size={48} style={{ color: "#b8975a", marginBottom: 12, opacity: 0.8 }} />
+            <h3
+              style={{
+                fontFamily: "var(--s28-serif, serif)",
+                fontSize: "1.35rem",
+                color: "#f7f5f0",
+                margin: "0 0 8px",
+              }}
+            >
+              No images yet — upload your first image
+            </h3>
+            <p style={{ color: "#9a9184", fontSize: 14, margin: "0 auto", maxWidth: 460 }}>
+              Your MongoDB showcase collection is ready. Select a file above and click <strong>Upload & Publish</strong> to add your first photo.
+            </p>
           </div>
         ) : filteredImages.length === 0 ? (
           <div

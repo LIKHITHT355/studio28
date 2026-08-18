@@ -15,7 +15,7 @@ export default function Portfolio() {
 
   const items = useMemo(() => {
     const allItems = dbImages || [];
-    return active === "All" ? allItems : allItems.filter((g) => g.cat === active);
+    return active === "All" ? allItems : allItems.filter((g) => g.cat?.toLowerCase() === active.toLowerCase());
   }, [active, dbImages]);
 
   return (
