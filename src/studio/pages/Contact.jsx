@@ -59,7 +59,7 @@ export default function Contact() {
       <section className="s28-page-hero">
         <div className="s28-container">
           <span className="s28-eyebrow">Contact & Booking</span>
-          <h1>Let's plan your shoot</h1>
+          <h1>Book photography in Bangalore</h1>
           <p>
             Call us for tailored pricing and availability, or send an enquiry — we reply within 24
             hours.

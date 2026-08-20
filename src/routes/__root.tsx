@@ -126,12 +126,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         type: "application/ld+json",
         children: JSON.stringify({
           "@context": "https://schema.org",
-          "@type": "LocalBusiness",
-          "@id": "#studios28",
+          "@type": "ProfessionalService",
+          "@id": "https://studios28.in",
           name: "Studios 28",
+          // TODO: Add a real Studios 28 photo URL here when one is available; do not use stock imagery.
           description:
             "A Bangalore-based photography studio capturing weddings, portraits, and brand stories with a timeless, editorial eye.",
-          telephone: "+91 88845 45006",
+          url: "https://studios28.in",
+          telephone: "+918884545006",
           email: "pradeep7791@gmail.com",
           address: {
             "@type": "PostalAddress",
@@ -144,7 +146,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
             "https://www.facebook.com/profile.php?id=100082434444044",
           ],
           priceRange: "$$",
-          openingHours: "Mo-Sa 10:00-19:00",
+          openingHoursSpecification: {
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            opens: "10:00",
+            closes: "19:00",
+          },
         }),
       },
     ],

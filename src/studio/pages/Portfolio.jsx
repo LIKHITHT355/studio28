@@ -23,7 +23,7 @@ export default function Portfolio() {
       <section className="s28-page-hero">
         <div className="s28-container">
           <span className="s28-eyebrow">Portfolio</span>
-          <h1>A gallery of moments</h1>
+          <h1>Bangalore photography portfolio</h1>
           <p>
             Browse selected work across weddings, portraits, events, and brands. Click any image to
             view full-screen.

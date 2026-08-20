@@ -76,8 +76,11 @@ export default function Footer() {
                 <Link to="/contact">Contact</Link>
               </li>
               <li>
-                <Link to="/admin" style={{ color: "var(--s28-gold)" }}>
+                {/*
                   Admin Portal ↗
+                */}
+                <Link to="/admin" style={{ color: "var(--s28-gold)" }}>
+                  Admin Portal
                 </Link>
               </li>
             </ul>

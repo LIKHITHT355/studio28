@@ -25,7 +25,7 @@ export default function About() {
       <section className="s28-page-hero">
         <div className="s28-container">
           <span className="s28-eyebrow">Our Story</span>
-          <h1>Bangalore's quiet corner for beautiful photography</h1>
+          <h1>About our Bangalore photography studio</h1>
         </div>
       </section>
 

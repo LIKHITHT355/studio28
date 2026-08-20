@@ -12,9 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as BrandProductPhotographyBangaloreRouteImport } from './routes/brand-product-photography-bangalore'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as EventPhotographyBangaloreRouteImport } from './routes/event-photography-bangalore'
+import { Route as MaternityPhotographyBangaloreRouteImport } from './routes/maternity-photography-bangalore'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as PortraitPhotographyBangaloreRouteImport } from './routes/portrait-photography-bangalore'
 import { Route as ServicesRouteImport } from './routes/services'
+import { Route as WeddingPhotographyBangaloreRouteImport } from './routes/wedding-photography-bangalore'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -31,69 +36,146 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BrandProductPhotographyBangaloreRoute =
+  BrandProductPhotographyBangaloreRouteImport.update({
+    id: '/brand-product-photography-bangalore',
+    path: '/brand-product-photography-bangalore',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventPhotographyBangaloreRoute =
+  EventPhotographyBangaloreRouteImport.update({
+    id: '/event-photography-bangalore',
+    path: '/event-photography-bangalore',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const MaternityPhotographyBangaloreRoute =
+  MaternityPhotographyBangaloreRouteImport.update({
+    id: '/maternity-photography-bangalore',
+    path: '/maternity-photography-bangalore',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PortfolioRoute = PortfolioRouteImport.update({
   id: '/portfolio',
   path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortraitPhotographyBangaloreRoute =
+  PortraitPhotographyBangaloreRouteImport.update({
+    id: '/portrait-photography-bangalore',
+    path: '/portrait-photography-bangalore',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ServicesRoute = ServicesRouteImport.update({
   id: '/services',
   path: '/services',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WeddingPhotographyBangaloreRoute =
+  WeddingPhotographyBangaloreRouteImport.update({
+    id: '/wedding-photography-bangalore',
+    path: '/wedding-photography-bangalore',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/brand-product-photography-bangalore': typeof BrandProductPhotographyBangaloreRoute
   '/contact': typeof ContactRoute
+  '/event-photography-bangalore': typeof EventPhotographyBangaloreRoute
+  '/maternity-photography-bangalore': typeof MaternityPhotographyBangaloreRoute
   '/portfolio': typeof PortfolioRoute
+  '/portrait-photography-bangalore': typeof PortraitPhotographyBangaloreRoute
   '/services': typeof ServicesRoute
+  '/wedding-photography-bangalore': typeof WeddingPhotographyBangaloreRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/brand-product-photography-bangalore': typeof BrandProductPhotographyBangaloreRoute
   '/contact': typeof ContactRoute
+  '/event-photography-bangalore': typeof EventPhotographyBangaloreRoute
+  '/maternity-photography-bangalore': typeof MaternityPhotographyBangaloreRoute
   '/portfolio': typeof PortfolioRoute
+  '/portrait-photography-bangalore': typeof PortraitPhotographyBangaloreRoute
   '/services': typeof ServicesRoute
+  '/wedding-photography-bangalore': typeof WeddingPhotographyBangaloreRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/brand-product-photography-bangalore': typeof BrandProductPhotographyBangaloreRoute
   '/contact': typeof ContactRoute
+  '/event-photography-bangalore': typeof EventPhotographyBangaloreRoute
+  '/maternity-photography-bangalore': typeof MaternityPhotographyBangaloreRoute
   '/portfolio': typeof PortfolioRoute
+  '/portrait-photography-bangalore': typeof PortraitPhotographyBangaloreRoute
   '/services': typeof ServicesRoute
+  '/wedding-photography-bangalore': typeof WeddingPhotographyBangaloreRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/admin' | '/contact' | '/portfolio' | '/services'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/brand-product-photography-bangalore'
+    | '/contact'
+    | '/event-photography-bangalore'
+    | '/maternity-photography-bangalore'
+    | '/portfolio'
+    | '/portrait-photography-bangalore'
+    | '/services'
+    | '/wedding-photography-bangalore'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/admin' | '/contact' | '/portfolio' | '/services'
+  to:
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/brand-product-photography-bangalore'
+    | '/contact'
+    | '/event-photography-bangalore'
+    | '/maternity-photography-bangalore'
+    | '/portfolio'
+    | '/portrait-photography-bangalore'
+    | '/services'
+    | '/wedding-photography-bangalore'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/admin'
+    | '/brand-product-photography-bangalore'
     | '/contact'
+    | '/event-photography-bangalore'
+    | '/maternity-photography-bangalore'
     | '/portfolio'
+    | '/portrait-photography-bangalore'
     | '/services'
+    | '/wedding-photography-bangalore'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
+  BrandProductPhotographyBangaloreRoute: typeof BrandProductPhotographyBangaloreRoute
   ContactRoute: typeof ContactRoute
+  EventPhotographyBangaloreRoute: typeof EventPhotographyBangaloreRoute
+  MaternityPhotographyBangaloreRoute: typeof MaternityPhotographyBangaloreRoute
   PortfolioRoute: typeof PortfolioRoute
+  PortraitPhotographyBangaloreRoute: typeof PortraitPhotographyBangaloreRoute
   ServicesRoute: typeof ServicesRoute
+  WeddingPhotographyBangaloreRoute: typeof WeddingPhotographyBangaloreRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -119,11 +201,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/brand-product-photography-bangalore': {
+      id: '/brand-product-photography-bangalore'
+      path: '/brand-product-photography-bangalore'
+      fullPath: '/brand-product-photography-bangalore'
+      preLoaderRoute: typeof BrandProductPhotographyBangaloreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/event-photography-bangalore': {
+      id: '/event-photography-bangalore'
+      path: '/event-photography-bangalore'
+      fullPath: '/event-photography-bangalore'
+      preLoaderRoute: typeof EventPhotographyBangaloreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/maternity-photography-bangalore': {
+      id: '/maternity-photography-bangalore'
+      path: '/maternity-photography-bangalore'
+      fullPath: '/maternity-photography-bangalore'
+      preLoaderRoute: typeof MaternityPhotographyBangaloreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portfolio': {
@@ -133,11 +236,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portrait-photography-bangalore': {
+      id: '/portrait-photography-bangalore'
+      path: '/portrait-photography-bangalore'
+      fullPath: '/portrait-photography-bangalore'
+      preLoaderRoute: typeof PortraitPhotographyBangaloreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services': {
       id: '/services'
       path: '/services'
       fullPath: '/services'
       preLoaderRoute: typeof ServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wedding-photography-bangalore': {
+      id: '/wedding-photography-bangalore'
+      path: '/wedding-photography-bangalore'
+      fullPath: '/wedding-photography-bangalore'
+      preLoaderRoute: typeof WeddingPhotographyBangaloreRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -147,9 +264,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
+  BrandProductPhotographyBangaloreRoute: BrandProductPhotographyBangaloreRoute,
   ContactRoute: ContactRoute,
+  EventPhotographyBangaloreRoute: EventPhotographyBangaloreRoute,
+  MaternityPhotographyBangaloreRoute: MaternityPhotographyBangaloreRoute,
   PortfolioRoute: PortfolioRoute,
+  PortraitPhotographyBangaloreRoute: PortraitPhotographyBangaloreRoute,
   ServicesRoute: ServicesRoute,
+  WeddingPhotographyBangaloreRoute: WeddingPhotographyBangaloreRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

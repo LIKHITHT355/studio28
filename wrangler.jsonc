@@ -5,5 +5,13 @@
     "compatibility_flags": [
         "nodejs_compat"
     ],
+    "secrets": {
+        "required": [
+            "MONGODB_URI",
+            "IMAGEKIT_PUBLIC_KEY",
+            "IMAGEKIT_PRIVATE_KEY",
+            "IMAGEKIT_URL_ENDPOINT"
+        ]
+    },
     "main": "@tanstack/react-start/server-entry"
 }

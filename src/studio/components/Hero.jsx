@@ -33,7 +33,7 @@ export default function Hero() {
       <div className="s28-container s28-hero-inner">
         <div>
           <span className="s28-eyebrow">Bangalore Photography Studio</span>
-          <h1>{STUDIO.tagline}</h1>
+          <h1>Bangalore photography for stories worth keeping</h1>
           <p>
             Weddings, portraits, and brand imagery — shot with a timeless, editorial eye and
             delivered as heirloom-quality galleries.
